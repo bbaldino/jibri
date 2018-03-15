@@ -77,7 +77,10 @@ class FileRecordingJibriService(private val recordingOptions: RecordingOptions) 
      * Used for the selenium interaction
      */
     private val jibriSelenium = JibriSelenium(
-        JibriSeleniumOptions(recordingOptions.callParams, urlParams = RECORDING_URL_OPTIONS),
+        JibriSeleniumOptions(
+            recordingOptions.callParams,
+            urlParams = RECORDING_URL_OPTIONS,
+            extraChromeCommandLineFlags = listOf()),
         Executors.newSingleThreadScheduledExecutor(NameableThreadFactory("JibriSelenium"))
     )
     /**

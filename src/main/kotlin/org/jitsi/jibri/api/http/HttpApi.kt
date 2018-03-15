@@ -24,7 +24,10 @@ import org.jitsi.jibri.RecordingSinkType
 import org.jitsi.jibri.ServiceParams
 import org.jitsi.jibri.StartServiceResult
 import org.jitsi.jibri.StreamingParams
+import org.jitsi.jibri.service.impl.SipGatewayServiceParams
+import org.jitsi.jibri.sipgateway.SipClientParams
 import org.jitsi.jibri.util.extensions.debug
+import org.jitsi.jibri.util.extensions.error
 import java.util.logging.Logger
 import javax.ws.rs.Consumes
 import javax.ws.rs.GET
@@ -39,6 +42,10 @@ data class StartServiceParams(
     val callParams: CallParams,
     val sinkType: RecordingSinkType,
     val youTubeStreamKey: String? = null
+    /**
+     * Params to be used if [RecordingSinkType] is [RecordingSinkType.GATEWAY]
+     */
+    val sipClientParams: SipClientParams? = null
 )
 
 /**
@@ -75,7 +82,7 @@ class HttpApi(private val jibriManager: JibriManager) {
             RecordingSinkType.FILE -> run {
                 jibriManager.startFileRecording(
                     ServiceParams(usageTimeoutMinutes = 0),
-                    FileRecordingParams(serviceParams.callParams),
+                    FileRecordingParams(startServiceParams.callParams),
                     environmentContext = null
                 )
             }
@@ -83,9 +90,22 @@ class HttpApi(private val jibriManager: JibriManager) {
                 val youTubeStreamKey = serviceParams.youTubeStreamKey ?: return@run StartServiceResult.ERROR
                 jibriManager.startStreaming(
                     ServiceParams(usageTimeoutMinutes = 0),
-                    StreamingParams(serviceParams.callParams, youTubeStreamKey),
+                    StreamingParams(startServiceParams.callParams, youTubeStreamKey),
                     environmentContext = null
                 )
+            }
+            RecordingSinkType.GATEWAY -> {
+                startServiceParams.sipClientParams?.let {
+                    jibriManager.startSipGateway(
+                        ServiceParams(usageTimeoutMinutes = 0),
+                        SipGatewayServiceParams(
+                            startServiceParams.callParams,
+                            it)
+                    )
+                } ?: run {
+                    logger.error("SipGatewayService requested, but no SIP params passed")
+                    StartServiceResult.ERROR
+                }
             }
         }
         return when (result) {
