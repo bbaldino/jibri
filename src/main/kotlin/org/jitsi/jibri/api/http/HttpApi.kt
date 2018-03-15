@@ -26,7 +26,10 @@ import org.jitsi.jibri.StartServiceResult
 import org.jitsi.jibri.StreamingParams
 
 import org.jitsi.jibri.config.XmppCredentials
+import org.jitsi.jibri.service.impl.SipGatewayServiceParams
+import org.jitsi.jibri.sipgateway.SipClientParams
 import org.jitsi.jibri.util.extensions.debug
+import org.jitsi.jibri.util.extensions.error
 import java.util.logging.Logger
 import javax.ws.rs.Consumes
 import javax.ws.rs.GET
@@ -46,7 +49,11 @@ data class StartServiceParams(
      */
     val callLoginParams: XmppCredentials? = null,
     val sinkType: RecordingSinkType,
-    val youTubeStreamKey: String? = null
+    val youTubeStreamKey: String? = null,
+    /**
+     * Params to be used if [RecordingSinkType] is [RecordingSinkType.GATEWAY]
+     */
+    val sipClientParams: SipClientParams? = null
 )
 
 /**
@@ -98,6 +105,19 @@ class HttpApi(private val jibriManager: JibriManager) {
                     StreamingParams(serviceParams.callParams, callLoginParams, youTubeStreamKey),
                     environmentContext = null
                 )
+            }
+            RecordingSinkType.GATEWAY -> {
+                serviceParams.sipClientParams?.let {
+                    jibriManager.startSipGateway(
+                        ServiceParams(usageTimeoutMinutes = 0),
+                        SipGatewayServiceParams(
+                            serviceParams.callParams,
+                            it)
+                    )
+                } ?: run {
+                    logger.error("SipGatewayService requested, but no SIP params passed")
+                    StartServiceResult.ERROR
+                }
             }
         }
         return when (result) {
