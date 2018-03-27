@@ -24,6 +24,8 @@ fi
 
 echo "New version will be $MAJOR_VERSION.$MINOR_VERSION"
 
+cd $WORKSPACE
+
 git tag -a $MAJOR_VERSION.$MINOR_VERSION -m "New $MAJOR_MINOR release"
 
 dch -v "$MAJOR_VERSION.$MINOR_VERSION-1" "Built from git. $REV"
