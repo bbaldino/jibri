@@ -1,16 +1,18 @@
-resources/debian-package/etc/jitsi/jibri/asoundrc etc/jitsi/jibri/asoundrc
-resources/debian-package/etc/jitsi/jibri/config.json etc/jitsi/jibri/config.json
-resources/debian-package/etc/jitsi/jibri/icewm.preferences etc/jitsi/jibri/icewm.preferences
-resources/debian-package/etc/jitsi/jibri/xorg-video-dummy.conf etc/jitsi/jibri/xorg-video-dummy.conf
+#!/usr/bin/dh-exec
 
-resources/debian-package/etc/systemd/system/jibri-icewm.service etc/systemd/system/jibri-icewm.service
-resources/debian-package/etc/systemd/system/jibri.service etc/systemd/system/jibri.service
-resources/debian-package/etc/systemd/system/jibri-xorg.service etc/systemd/system/jibri-xorg.service
+resources/debian-package/etc/jitsi/jibri/asoundrc etc/jitsi/jibri
+resources/debian-package/etc/jitsi/jibri/config.json etc/jitsi/jibri
+resources/debian-package/etc/jitsi/jibri/icewm.preferences etc/jitsi/jibri
+resources/debian-package/etc/jitsi/jibri/xorg-video-dummy.conf etc/jitsi/jibri
 
-resources/debian-package/opt/jitsi/jibri/launch_jibri.sh opt/jitsi/jibri/launch_jibri.sh
-resources/debian-package/opt/jitsi/jibri/reload_jibri.sh opt/jitsi/jibri/reload_jibri.sh
-resources/debian-package/opt/jitsi/jibri/shutdown_jibri.sh opt/jitsi/jibri/shutdown_jibri.sh
+resources/debian-package/etc/systemd/system/jibri-icewm.service etc/systemd/system
+resources/debian-package/etc/systemd/system/jibri.service etc/systemd/system
+resources/debian-package/etc/systemd/system/jibri-xorg.service etc/systemd/system
 
-target/jibri-1.0-SNAPSHOT-jar-with-dependencies.jar opt/jitsi/jibri.jar
-lib/logging.properties etc/jitsi/jibri/logging.properties
+resources/debian-package/opt/jitsi/jibri/launch_jibri.sh opt/jitsi/jibri
+resources/debian-package/opt/jitsi/jibri/reload_jibri.sh opt/jitsi/jibri
+resources/debian-package/opt/jitsi/jibri/shutdown_jibri.sh opt/jitsi/jibri
+
+target/jibri.jar opt/jitsi
+lib/logging.properties etc/jitsi/jibri
 
