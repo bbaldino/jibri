@@ -1,16 +1,16 @@
-../resources/debian-package/etc/jitsi/jibri/asoundrc etc/jitsi/jibri/asoundrc
-../resources/debian-package/etc/jitsi/jibri/config.json etc/jitsi/jibri/config.json
-../resources/debian-package/etc/jitsi/jibri/icewm.preferences etc/jitsi/jibri/icewm.preferences
-../resources/debian-package/etc/jitsi/jibri/xorg-video-dummy.conf etc/jitsi/jibri/xorg-video-dummy.conf
+resources/debian-package/etc/jitsi/jibri/asoundrc etc/jitsi/jibri/asoundrc
+resources/debian-package/etc/jitsi/jibri/config.json etc/jitsi/jibri/config.json
+resources/debian-package/etc/jitsi/jibri/icewm.preferences etc/jitsi/jibri/icewm.preferences
+resources/debian-package/etc/jitsi/jibri/xorg-video-dummy.conf etc/jitsi/jibri/xorg-video-dummy.conf
 
-../resources/debian-package/etc/systemd/system/jibri-icewm.service etc/systemd/system/jibri-icewm.service
-../resources/debian-package/etc/systemd/system/jibri.service etc/systemd/system/jibri.service
-../resources/debian-package/etc/systemd/system/jibri-xorg.service etc/systemd/system/jibri-xorg.service
+resources/debian-package/etc/systemd/system/jibri-icewm.service etc/systemd/system/jibri-icewm.service
+resources/debian-package/etc/systemd/system/jibri.service etc/systemd/system/jibri.service
+resources/debian-package/etc/systemd/system/jibri-xorg.service etc/systemd/system/jibri-xorg.service
 
-../resources/debian-package/opt/jitsi/jibri/launch_jibri.sh opt/jitsi/jibri/launch_jibri.sh
-../resources/debian-package/opt/jitsi/jibri/reload_jibri.sh opt/jitsi/jibri/reload_jibri.sh
-../resources/debian-package/opt/jitsi/jibri/stop_jibri.sh opt/jitsi/jibri/stop_jibri.sh
+resources/debian-package/opt/jitsi/jibri/launch_jibri.sh opt/jitsi/jibri/launch_jibri.sh
+resources/debian-package/opt/jitsi/jibri/reload_jibri.sh opt/jitsi/jibri/reload_jibri.sh
+resources/debian-package/opt/jitsi/jibri/stop_jibri.sh opt/jitsi/jibri/stop_jibri.sh
 
-../target/jibri-1.0-SNAPSHOT-jar-with-dependencies.jar opt/jitsi/jibri.jar
-../lib/logging.properties etc/jitsi/jibri/logging.properties
+target/jibri-1.0-SNAPSHOT-jar-with-dependencies.jar opt/jitsi/jibri.jar
+lib/logging.properties etc/jitsi/jibri/logging.properties
 
