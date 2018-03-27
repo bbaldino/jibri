@@ -24,9 +24,17 @@ fi
 
 echo "New version will be $MAJOR_VERSION.$MINOR_VERSION"
 
+JAR_LOCATION=../../target/jibri-1.0-SNAPSHOT-jar-with-dependencies.jar
+echo "Copying $JAR_LOCATION into package location"
+cp $JAR_LOCATION ../../debian/opt/jitsi/jibri.jar
+echo "Copying logging.properties file into package location"
+cp ../../lib/logging.properties ../../debian/etc/jitsi/jibri/
+
 git tag -a $MAJOR_VERSION.$MINOR_VERSION -m "New $MAJOR_MINOR release"
 
 dch -v "$MAJOR_VERSION.$MINOR_VERSION-1" "Built from git. $REV"
 dch -D unstable -r ""
 
 dpkg-buildpackage -A -rfakeroot -us -uc
+
+#TODO: push tag to remote
