@@ -221,6 +221,7 @@ class XmppApi(
             return jibriManager.startSipGateway(
                 ServiceParams(xmppEnvironment.usageTimeoutMins),
                 SipGatewayServiceParams(callParams, SipClientParams(startIq.sipAddress, startIq.displayName)),
+                EnvironmentContext(xmppEnvironment.name),
                 serviceStatusHandler
             )
         }
