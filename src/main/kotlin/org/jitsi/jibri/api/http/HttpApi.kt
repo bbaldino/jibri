@@ -82,8 +82,7 @@ class HttpApi(private val jibriManager: JibriManager) {
             RecordingSinkType.FILE -> run {
                 jibriManager.startFileRecording(
                     ServiceParams(usageTimeoutMinutes = 0),
-                    FileRecordingParams(startServiceParams.callParams),
-                    environmentContext = null
+                    FileRecordingParams(startServiceParams.callParams)
                 )
             }
             RecordingSinkType.STREAM -> run {

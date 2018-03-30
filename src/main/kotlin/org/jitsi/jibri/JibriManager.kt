@@ -101,7 +101,7 @@ class JibriManager(private val config: JibriConfig) : StatusPublisher<JibriStatu
     fun startFileRecording(
         serviceParams: ServiceParams,
         fileRecordingParams: FileRecordingParams,
-        environmentContext: EnvironmentContext?,
+        environmentContext: EnvironmentContext? = null,
         serviceStatusHandler: JibriServiceStatusHandler? = null
     ): StartServiceResult {
         logger.info("Starting a file recording with params: $serviceParams $fileRecordingParams")
@@ -128,7 +128,7 @@ class JibriManager(private val config: JibriConfig) : StatusPublisher<JibriStatu
     fun startStreaming(
         serviceParams: ServiceParams,
         streamingParams: StreamingParams,
-        environmentContext: EnvironmentContext?,
+        environmentContext: EnvironmentContext? = null,
         serviceStatusHandler: JibriServiceStatusHandler? = null
     ): StartServiceResult {
         logger.info("Starting a stream with params: $serviceParams $streamingParams")
@@ -145,9 +145,11 @@ class JibriManager(private val config: JibriConfig) : StatusPublisher<JibriStatu
 
     @Synchronized
     fun startSipGateway(
-            serviceParams: ServiceParams,
-            sipGatewayServiceParams: SipGatewayServiceParams,
-            serviceStatusHandler: JibriServiceStatusHandler? = null): StartServiceResult {
+        serviceParams: ServiceParams,
+        sipGatewayServiceParams: SipGatewayServiceParams,
+        environmentContext: EnvironmentContext? = null,
+        serviceStatusHandler: JibriServiceStatusHandler? = null
+    ): StartServiceResult {
         logger.info("Starting a SIP gateway with params: $serviceParams $sipGatewayServiceParams")
         if (busy()) {
             logger.info("Jibri is busy, can't start service")
@@ -157,7 +159,7 @@ class JibriManager(private val config: JibriConfig) : StatusPublisher<JibriStatu
             sipGatewayServiceParams.callParams,
             sipGatewayServiceParams.sipClientParams
         ))
-        return startService(service, serviceParams, serviceStatusHandler)
+        return startService(service, serviceParams, environmentContext, serviceStatusHandler)
     }
 
     /**
