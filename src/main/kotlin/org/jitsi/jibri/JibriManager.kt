@@ -67,7 +67,8 @@ data class ServiceParams(
  * Parameters needed for starting a [FileRecordingJibriService]
  */
 data class FileRecordingParams(
-    val callParams: CallParams
+    val callParams: CallParams,
+    val callLogicParams: XmppCredentials
 )
 
 /**
@@ -75,6 +76,7 @@ data class FileRecordingParams(
  */
 data class StreamingParams(
     val callParams: CallParams,
+    val callLogicParams: XmppCredentials,
     val youTubeStreamKey: String
 )
 
