@@ -253,7 +253,6 @@ class XmppApi(
                     serviceStatusHandler
                 )
             }
-
             else -> {
                 StartServiceResult.ERROR
             }
