@@ -17,6 +17,8 @@
 
 package org.jitsi.jibri.util
 
+import org.jitsi.jibri.util.extensions.error
+import java.io.IOException
 import java.lang.reflect.Field
 import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
@@ -41,6 +43,24 @@ fun pid(p: Process): Long {
         pid = -1
     }
     return pid
+}
+
+fun launchProcess(
+        command: List<String>,
+        processBuilder: ProcessBuilder = ProcessBuilder(),
+        env: Map<String, String> = mapOf(),
+        logger: Logger? = null
+    ): Process? {
+    processBuilder.command(command)
+    processBuilder.redirectErrorStream()
+    processBuilder.environment().putAll(env)
+    logger?.info("Running command:\n ${processBuilder.command()})")
+    return try {
+        processBuilder.start()
+    } catch (e: IOException) {
+        logger?.error("Error launching command $command: $e")
+        null
+    }
 }
 
 fun stopProcess(p: Process?, name: String, logger: Logger) {

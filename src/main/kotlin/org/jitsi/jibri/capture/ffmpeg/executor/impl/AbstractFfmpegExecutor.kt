@@ -29,6 +29,7 @@ import org.jitsi.jibri.util.Tail
 import org.jitsi.jibri.util.Tee
 import org.jitsi.jibri.util.extensions.debug
 import org.jitsi.jibri.util.extensions.error
+import org.jitsi.jibri.util.launchProcess
 import org.jitsi.jibri.util.stopProcess
 import java.io.BufferedReader
 import java.io.IOException
@@ -71,24 +72,22 @@ abstract class AbstractFfmpegExecutor(private val processBuilder: ProcessBuilder
     protected abstract fun getFfmpegCommand(ffmpegExecutorParams: FfmpegExecutorParams, sink: Sink): String
 
     override fun launchFfmpeg(ffmpegExecutorParams: FfmpegExecutorParams, sink: Sink): Boolean {
-        processBuilder.command(getFfmpegCommand(ffmpegExecutorParams, sink).split(" "))
-        processBuilder.redirectErrorStream(true)
-        logger.info("Running ffmpeg command:\n ${processBuilder.command()}")
-        try {
-            currentFfmpegProc = processBuilder.start()
-        } catch (e: IOException) {
-            logger.error("Error starting ffmpeg: $e")
-            return false
-        }
-        // Tee ffmpeg's output so that we can analyze its status and log everything
-        ffmpegOutputTee = Tee(currentFfmpegProc!!.inputStream)
-        ffmpegTail = Tail(ffmpegOutputTee!!.addBranch())
-        // Read from a tee branch and log to a file
-        executor.submit {
-            val reader = BufferedReader(InputStreamReader(ffmpegOutputTee!!.addBranch()))
-            while (true) {
-                ffmpegOutputLogger.info(reader.readLine())
+        val command = getFfmpegCommand(ffmpegExecutorParams, sink).split(" ")
+        currentFfmpegProc = launchProcess(command, processBuilder, logger = logger)
+
+        currentFfmpegProc?.let {
+            // Tee ffmpeg's output so that we can analyze its status and log everything
+            ffmpegOutputTee = Tee(it.inputStream)
+            ffmpegTail = Tail(ffmpegOutputTee!!.addBranch())
+            // Read from a tee branch and log to a file
+            executor.submit {
+                val reader = BufferedReader(InputStreamReader(ffmpegOutputTee!!.addBranch()))
+                while (true) {
+                    ffmpegOutputLogger.info(reader.readLine())
+                }
             }
+        } ?: run {
+            return false
         }
 
         logger.debug("Launched ffmpeg, is it alive? ${currentFfmpegProc?.isAlive}")
