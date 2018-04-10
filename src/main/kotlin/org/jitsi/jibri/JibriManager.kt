@@ -51,8 +51,7 @@ enum class StartServiceResult {
  * Parameters needed for joining the call in Selenium
  */
 data class CallParams(
-    val callUrlInfo: CallUrlInfo,
-    val callLoginParams: XmppCredentials
+    val callUrlInfo: CallUrlInfo
 )
 
 //TODO: move these param classes into their appropriate files
