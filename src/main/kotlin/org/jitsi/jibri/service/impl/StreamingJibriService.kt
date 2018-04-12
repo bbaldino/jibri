@@ -18,6 +18,7 @@
 package org.jitsi.jibri.service.impl
 
 import org.jitsi.jibri.CallParams
+import org.jitsi.jibri.capture.Capturer
 import org.jitsi.jibri.capture.ffmpeg.FfmpegCapturer
 import org.jitsi.jibri.capture.ffmpeg.executor.impl.FFMPEG_RESTART_ATTEMPTS
 import org.jitsi.jibri.selenium.JibriSelenium
@@ -27,6 +28,7 @@ import org.jitsi.jibri.service.JibriService
 import org.jitsi.jibri.service.JibriServiceStatus
 import org.jitsi.jibri.sink.Sink
 import org.jitsi.jibri.sink.impl.StreamSink
+import org.jitsi.jibri.util.MonitorableProcess
 import org.jitsi.jibri.util.NameableThreadFactory
 import org.jitsi.jibri.util.ProcessMonitor
 import org.jitsi.jibri.util.extensions.error
@@ -95,8 +97,16 @@ class StreamingJibriService(private val streamingOptions: StreamingOptions) : Ji
             logger.error("Capturer failed to start")
             return false
         }
+
+        val processMonitor = createCapturerMonitor(capturer)
+        processMonitorTask = executor.scheduleAtFixedRate(processMonitor, 30, 10, TimeUnit.SECONDS)
+        return true
+    }
+
+    // abtract out common logic, return common status? HEALTHY, UNHEALTHY, EXITED?
+    private fun createCapturerMonitor(process: Capturer): ProcessMonitor {
         var numRestarts = 0
-        val processMonitor = ProcessMonitor(capturer) { exitCode ->
+        return ProcessMonitor(process) { exitCode ->
             if (exitCode != null) {
                 logger.error("Capturer process is no longer healthy.  It exited with code $exitCode")
             } else {
@@ -107,15 +117,13 @@ class StreamingJibriService(private val streamingOptions: StreamingOptions) : Ji
                 publishStatus(JibriServiceStatus.ERROR)
             } else {
                 numRestarts++
-                capturer.stop()
-                if (!capturer.start(sink)) {
+                process.stop()
+                if (!process.start(sink)) {
                     logger.error("Capture failed to restart, giving up")
                     publishStatus(JibriServiceStatus.ERROR)
                 }
             }
         }
-        processMonitorTask = executor.scheduleAtFixedRate(processMonitor, 30, 10, TimeUnit.SECONDS)
-        return true
     }
 
     override fun stop() {
