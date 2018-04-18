@@ -241,7 +241,7 @@ class XmppApi(
                     ServiceParams(xmppEnvironment.usageTimeoutMins),
                     FileRecordingRequestParams(callParams, xmppEnvironment.callLogin),
                     EnvironmentContext(xmppEnvironment.name),
-                    serviceStatusHandler
+                    listOf(serviceStatusHandler)
                 )
             }
             JibriMode.STREAM -> {
@@ -249,7 +249,7 @@ class XmppApi(
                     ServiceParams(xmppEnvironment.usageTimeoutMins),
                     StreamingParams(callParams, xmppEnvironment.callLogin, youTubeStreamKey = startIq.streamId),
                     EnvironmentContext(xmppEnvironment.name),
-                    serviceStatusHandler
+                    listOf(serviceStatusHandler)
                 )
             }
             JibriMode.SIPGW -> {
@@ -257,7 +257,7 @@ class XmppApi(
                     ServiceParams(xmppEnvironment.usageTimeoutMins),
                     SipGatewayServiceParams(callParams, SipClientParams(startIq.sipAddress, startIq.displayName)),
                     EnvironmentContext(xmppEnvironment.name),
-                    serviceStatusHandler
+                    listOf(serviceStatusHandler)
                 )
             }
             else -> {

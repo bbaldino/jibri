@@ -6,9 +6,12 @@ import org.jitsi.jibri.StartServiceResult
 import org.jitsi.jibri.config.JibriConfig
 import org.jitsi.jibri.health.EnvironmentContext
 import org.jitsi.jibri.health.JibriHealth
+import org.jitsi.jibri.manager.state.AlreadyBusyException
+import org.jitsi.jibri.manager.state.Busy
 import org.jitsi.jibri.manager.state.Idle
 import org.jitsi.jibri.manager.state.JibriManagerState
 import org.jitsi.jibri.service.JibriService
+import org.jitsi.jibri.service.JibriServiceStatus
 import org.jitsi.jibri.service.JibriServiceStatusHandler
 import org.jitsi.jibri.service.ServiceParams
 import org.jitsi.jibri.service.impl.FileRecordingJibriService
@@ -16,21 +19,32 @@ import org.jitsi.jibri.service.impl.SipGatewayServiceParams
 import org.jitsi.jibri.service.impl.StreamingJibriService
 import org.jitsi.jibri.service.impl.StreamingParams
 import org.jitsi.jibri.util.StatusPublisher
+import org.jitsi.jibri.util.extensions.error
+import java.util.logging.Logger
 
 class NewJibriManager(val config: JibriConfig) : StatusPublisher<JibriStatusPacketExt.Status>() {
-    /**
-     * A function to be executed when [NewJibriManager] enters an [Idle] state
-     */
-    var pendingIdleFunc: () -> Unit = {}
-
+    private val logger = Logger.getLogger(this::class.qualifiedName)
     /**
      * The current state of this [NewJibriManager].  The state object implements
      * the proper behavior for each interface call for that state.
      */
-    var state: JibriManagerState = Idle(this)
+    private var state: JibriManagerState = Idle(this)
 
     public override fun publishStatus(status: JibriStatusPacketExt.Status) {
         super.publishStatus(status)
+    }
+
+    private fun transitionToState(newState: JibriManagerState) {
+        state = newState
+        state.postStateTransition()
+    }
+
+    private fun handleServiceStopped(status: JibriServiceStatus) {
+        when (status) {
+            JibriServiceStatus.FINISHED -> logger.info("Service finished cleanly, shutting down")
+            JibriServiceStatus.ERROR -> logger.error("Service finished with error, shutting down")
+        }
+        stopService()
     }
 
     /**
@@ -43,9 +57,25 @@ class NewJibriManager(val config: JibriConfig) : StatusPublisher<JibriStatusPack
         serviceParams: ServiceParams,
         fileRecordingRequestParams: FileRecordingRequestParams,
         environmentContext: EnvironmentContext? = null,
-        serviceStatusHandler: JibriServiceStatusHandler? = null
-    ): StartServiceResult = state.startFileRecording(
-        serviceParams, fileRecordingRequestParams, environmentContext, serviceStatusHandler)
+        serviceStatusHandlers: List<JibriServiceStatusHandler>
+    ): StartServiceResult {
+        return try {
+            val newState =
+                state.startFileRecording(
+                    serviceParams,
+                    fileRecordingRequestParams,
+                    environmentContext,
+                    serviceStatusHandlers + ::handleServiceStopped
+                )
+            transitionToState(newState)
+            when (newState) {
+                is Idle -> StartServiceResult.ERROR
+                is Busy -> StartServiceResult.SUCCESS
+            }
+        } catch (e: AlreadyBusyException) {
+            StartServiceResult.BUSY
+        }
+    }
 
     /**
      * Starts a [StreamingJibriService] to capture the call according
@@ -57,21 +87,58 @@ class NewJibriManager(val config: JibriConfig) : StatusPublisher<JibriStatusPack
         serviceParams: ServiceParams,
         streamingParams: StreamingParams,
         environmentContext: EnvironmentContext? = null,
-        serviceStatusHandler: JibriServiceStatusHandler? = null
-    ): StartServiceResult = state.startStreaming(serviceParams, streamingParams, environmentContext, serviceStatusHandler)
+        serviceStatusHandlers: List<JibriServiceStatusHandler>
+    ): StartServiceResult {
+        return try {
+            val newState =
+                state.startStreaming(
+                    serviceParams,
+                    streamingParams,
+                    environmentContext,
+                    serviceStatusHandlers + ::handleServiceStopped
+                )
+            transitionToState(newState)
+            when (newState) {
+                is Idle -> StartServiceResult.ERROR
+                is Busy -> StartServiceResult.SUCCESS
+            }
+        } catch (e: AlreadyBusyException) {
+            StartServiceResult.BUSY
+        }
+    }
 
     fun startSipGateway(
         serviceParams: ServiceParams,
         sipGatewayServiceParams: SipGatewayServiceParams,
         environmentContext: EnvironmentContext? = null,
-        serviceStatusHandler: JibriServiceStatusHandler? = null
-    ): StartServiceResult = state.startSipGateway(serviceParams, sipGatewayServiceParams, environmentContext, serviceStatusHandler)
+        serviceStatusHandlers: List<JibriServiceStatusHandler>
+    ): StartServiceResult {
+        return try {
+            val newState =
+                state.startSipGateway(
+                    serviceParams,
+                    sipGatewayServiceParams,
+                    environmentContext,
+                    serviceStatusHandlers + ::handleServiceStopped
+                )
+            transitionToState(newState)
+            when (newState) {
+                is Idle -> StartServiceResult.ERROR
+                is Busy -> StartServiceResult.SUCCESS
+            }
+        } catch (e: AlreadyBusyException) {
+            StartServiceResult.BUSY
+        }
+    }
 
     /**
      * Stop the currently active [JibriService], if there is one
      */
     @Synchronized
-    fun stopService() = state.stopService()
+    fun stopService() {
+        val newState = state.stopService()
+        transitionToState(newState)
+    }
 
     /**
      * Returns an object describing the "health" of this Jibri

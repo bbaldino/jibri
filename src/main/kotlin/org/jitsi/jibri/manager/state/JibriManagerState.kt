@@ -18,29 +18,27 @@ package org.jitsi.jibri.manager.state
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriStatusPacketExt
 import org.jitsi.jibri.FileRecordingRequestParams
-import org.jitsi.jibri.StartServiceResult
 import org.jitsi.jibri.health.EnvironmentContext
 import org.jitsi.jibri.health.JibriHealth
 import org.jitsi.jibri.manager.NewJibriManager
 import org.jitsi.jibri.service.JibriService
-import org.jitsi.jibri.service.JibriServiceStatus
+import org.jitsi.jibri.service.JibriServiceFactory
 import org.jitsi.jibri.service.JibriServiceStatusHandler
 import org.jitsi.jibri.service.ServiceParams
-import org.jitsi.jibri.service.impl.FileRecordingJibriService
 import org.jitsi.jibri.service.impl.FileRecordingParams
-import org.jitsi.jibri.service.impl.SipGatewayJibriService
 import org.jitsi.jibri.service.impl.SipGatewayServiceParams
-import org.jitsi.jibri.service.impl.StreamingJibriService
 import org.jitsi.jibri.service.impl.StreamingParams
 import org.jitsi.jibri.util.extensions.error
 import org.jitsi.jibri.util.extensions.schedule
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
-import java.util.concurrent.Future
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 import java.util.logging.Logger
+
+sealed class StateTransitionException(message: String) : Exception(message)
+class StartServiceErrorException : StateTransitionException("Error starting service")
+class AlreadyBusyException : StateTransitionException("Jibri is already busy")
 
 /**
  * [NewJibriManager] has 2 states: [Busy] and [Idle].  Each state
@@ -48,28 +46,30 @@ import java.util.logging.Logger
  * [JibriManagerState].
  */
 sealed class JibriManagerState(protected val jibriManager: NewJibriManager) {
+    open fun postStateTransition() {}
+
     open fun startFileRecording(
         serviceParams: ServiceParams,
         fileRecordingRequestParams: FileRecordingRequestParams,
         environmentContext: EnvironmentContext? = null,
-        serviceStatusHandler: JibriServiceStatusHandler? = null
-    ): StartServiceResult = throw NotImplementedError()
+        serviceStatusHandlers: List<JibriServiceStatusHandler>
+    ): JibriManagerState = throw NotImplementedError()
 
     open fun startStreaming(
         serviceParams: ServiceParams,
         streamingParams: StreamingParams,
         environmentContext: EnvironmentContext? = null,
-        serviceStatusHandler: JibriServiceStatusHandler? = null
-    ): StartServiceResult = throw NotImplementedError()
+        serviceStatusHandlers: List<JibriServiceStatusHandler>
+    ): JibriManagerState = throw NotImplementedError()
 
     open fun startSipGateway(
         serviceParams: ServiceParams,
         sipGatewayServiceParams: SipGatewayServiceParams,
         environmentContext: EnvironmentContext? = null,
-        serviceStatusHandler: JibriServiceStatusHandler? = null
-    ): StartServiceResult = throw NotImplementedError()
+        serviceStatusHandlers: List<JibriServiceStatusHandler>
+    ): JibriManagerState = throw NotImplementedError()
 
-    open fun stopService(): Unit = throw NotImplementedError()
+    open fun stopService(): JibriManagerState = throw NotImplementedError()
 
     open fun healthCheck(): JibriHealth = throw NotImplementedError()
 
@@ -81,7 +81,7 @@ class Busy(
     private val activeService: JibriService,
     usageTimeoutMinutes: Int,
     private val environmentContext: EnvironmentContext? = null,
-    result: CompletableFuture<StartServiceResult>,
+    serviceStatusHandlers: List<JibriServiceStatusHandler>,
     executor: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
 ) : JibriManagerState(jibriManager) {
     private val logger = Logger.getLogger(this::class.qualifiedName)
@@ -91,60 +91,63 @@ class Busy(
      */
     private var serviceTimeoutTask: ScheduledFuture<*>? = null
 
+    /**
+     * A function to be executed when we transition to [Idle] state, we save
+     * it in case [Busy.executeWhenIdle] is called so it can be passed to [Idle]
+     */
+    private var pendingIdleFunc: () -> Unit = {}
+
     init {
         logger.info("JibriManager entering BUSY state")
-        jibriManager.publishStatus(JibriStatusPacketExt.Status.BUSY)
         if (usageTimeoutMinutes != 0) {
             logger.info("This service will have a usage timeout of $usageTimeoutMinutes minute(s)")
             serviceTimeoutTask = executor.schedule(usageTimeoutMinutes.toLong(), TimeUnit.MINUTES) {
                 logger.info("The usage timeout has elapsed, stopping the currently active service")
                 try {
-                    stopService()
+                    jibriManager.stopService()
                 } catch (t: Throwable) {
                     logger.error("Error while stopping service due to usage timeout: $t")
                 }
             }
         }
-        // The manager adds its own status handler so that it can stop
-        // the error'd service and update presence appropriately
-        activeService.addStatusHandler {
-            when (it) {
-                JibriServiceStatus.ERROR, JibriServiceStatus.FINISHED -> stopService()
-            }
-        }
+        serviceStatusHandlers.forEach(activeService::addStatusHandler)
         if (!activeService.start()) {
-            result.complete(StartServiceResult.ERROR)
-            stopService()
-        } else {
-            result.complete(StartServiceResult.SUCCESS)
+            logger.error("Service failed to start")
+            throw StartServiceErrorException()
         }
     }
+
+    override fun postStateTransition() {
+        logger.info("Jibri entered BUSY state")
+        jibriManager.publishStatus(JibriStatusPacketExt.Status.BUSY)
+    }
+
     override fun startFileRecording(
         serviceParams: ServiceParams,
         fileRecordingRequestParams: FileRecordingRequestParams,
         environmentContext: EnvironmentContext?,
-        serviceStatusHandler: JibriServiceStatusHandler?
-    ): StartServiceResult = StartServiceResult.BUSY
+        serviceStatusHandlers: List<JibriServiceStatusHandler>
+    ): JibriManagerState = throw AlreadyBusyException()
 
     override fun startStreaming(
         serviceParams: ServiceParams,
         streamingParams: StreamingParams,
         environmentContext: EnvironmentContext?,
-        serviceStatusHandler: JibriServiceStatusHandler?
-    ): StartServiceResult = StartServiceResult.BUSY
+        serviceStatusHandlers: List<JibriServiceStatusHandler>
+    ): JibriManagerState = throw AlreadyBusyException()
 
     override fun startSipGateway(
         serviceParams: ServiceParams,
         sipGatewayServiceParams: SipGatewayServiceParams,
         environmentContext: EnvironmentContext?,
-        serviceStatusHandler: JibriServiceStatusHandler?
-    ): StartServiceResult = StartServiceResult.BUSY
+        serviceStatusHandlers: List<JibriServiceStatusHandler>
+    ): JibriManagerState = throw AlreadyBusyException()
 
-    override fun stopService() {
+    override fun stopService(): JibriManagerState {
         println("Stopping the current service")
         serviceTimeoutTask?.cancel(false)
         activeService.stop()
-        jibriManager.state = Idle(jibriManager)
+        return Idle(jibriManager, pendingIdleFunc)
     }
 
     override fun healthCheck(): JibriHealth {
@@ -152,19 +155,24 @@ class Busy(
     }
 
     override fun executeWhenIdle(func: () -> Unit) {
-        jibriManager.pendingIdleFunc = func
+        pendingIdleFunc = func
     }
 }
 
 class Idle(
-    jibriManager: NewJibriManager
+    jibriManager: NewJibriManager,
+    private val idleFunc: () -> Unit = {},
+    private val serviceFactory: JibriServiceFactory = JibriServiceFactory()
 ) : JibriManagerState(jibriManager) {
     private val logger = Logger.getLogger(this::class.qualifiedName)
 
     init {
         logger.info("JibriManager entering IDLE state")
-        jibriManager.pendingIdleFunc()
-        jibriManager.pendingIdleFunc = {}
+    }
+
+    override fun postStateTransition() {
+        logger.info("Jibri entered IDLE state")
+        idleFunc()
         jibriManager.publishStatus(JibriStatusPacketExt.Status.IDLE)
     }
 
@@ -172,12 +180,12 @@ class Idle(
         serviceParams: ServiceParams,
         fileRecordingRequestParams: FileRecordingRequestParams,
         environmentContext: EnvironmentContext?,
-        serviceStatusHandler: JibriServiceStatusHandler?
-    ): StartServiceResult {
+        serviceStatusHandlers: List<JibriServiceStatusHandler>
+    ): JibriManagerState {
         logger.info("Starting a file recording with params: $fileRecordingRequestParams " +
                 "finalize script path: ${jibriManager.config.finalizeRecordingScriptPath} and " +
                 "recordings directory: ${jibriManager.config.recordingDirectory}")
-        val service = FileRecordingJibriService(
+        val service = serviceFactory.createFileRecordingService(
             FileRecordingParams(
                 fileRecordingRequestParams.callParams,
                 fileRecordingRequestParams.callLoginParams,
@@ -185,63 +193,47 @@ class Idle(
                 jibriManager.config.recordingDirectory
             )
         )
-        return startService(service, serviceParams, environmentContext, serviceStatusHandler).get()
+        return startService(service, serviceParams, environmentContext, serviceStatusHandlers)
     }
 
     override fun startStreaming(
         serviceParams: ServiceParams,
         streamingParams: StreamingParams,
         environmentContext: EnvironmentContext?,
-        serviceStatusHandler: JibriServiceStatusHandler?
-    ): StartServiceResult {
+        serviceStatusHandlers: List<JibriServiceStatusHandler>
+    ): JibriManagerState {
         logger.info("Starting a stream with params: $serviceParams $streamingParams")
-        val service = StreamingJibriService(streamingParams)
-        return startService(service, serviceParams, environmentContext, serviceStatusHandler).get()
+        val service = serviceFactory.createStreamingJibriService(streamingParams)
+        return startService(service, serviceParams, environmentContext, serviceStatusHandlers)
     }
 
     override fun startSipGateway(
         serviceParams: ServiceParams,
         sipGatewayServiceParams: SipGatewayServiceParams,
         environmentContext: EnvironmentContext?,
-        serviceStatusHandler: JibriServiceStatusHandler?
-    ): StartServiceResult {
+        serviceStatusHandlers: List<JibriServiceStatusHandler>
+    ): JibriManagerState {
         logger.info("Starting a SIP gateway with params: $serviceParams $sipGatewayServiceParams")
-        val service = SipGatewayJibriService(SipGatewayServiceParams(
+        val service = serviceFactory.createSipGatewayJibriService(SipGatewayServiceParams(
             sipGatewayServiceParams.callParams,
             sipGatewayServiceParams.sipClientParams
         ))
-        return startService(service, serviceParams, environmentContext, serviceStatusHandler).get()
+        return startService(service, serviceParams, environmentContext, serviceStatusHandlers)
     }
 
     private fun startService(
         jibriService: JibriService,
         serviceParams: ServiceParams,
         environmentContext: EnvironmentContext?,
-        serviceStatusHandler: JibriServiceStatusHandler? = null
-    ): Future<StartServiceResult> {
-        if (serviceStatusHandler != null) {
-            jibriService.addStatusHandler(serviceStatusHandler)
+        serviceStatusHandlers: List<JibriServiceStatusHandler>
+    ): JibriManagerState {
+        return try {
+            Busy(jibriManager, jibriService, serviceParams.usageTimeoutMinutes, environmentContext, serviceStatusHandlers)
+        } catch (e: StateTransitionException) {
+            this
         }
-        // The manager adds its own status handler so that it can stop
-        // the error'd service and update presence appropriately
-        jibriService.addStatusHandler {
-            when (it) {
-                JibriServiceStatus.ERROR, JibriServiceStatus.FINISHED -> stopService()
-            }
-        }
-
-        // The Busy state is responsible for starting the service, but we want to return from this call whether
-        // or not it succeeded, so we'll pass a future to the Busy state and let it tell us its result so
-        // we can return it here
-        // TODO: is this a hack?  Another option would be to have a state transition method which handled all
-        // changes and could return a result, but even that is tough since the work will happen in the state's
-        // ctor (unless we also added a 'enter' method or something?)
-        val res = CompletableFuture<StartServiceResult>()
-        jibriManager.state =
-                Busy(jibriManager, jibriService, serviceParams.usageTimeoutMinutes, environmentContext, res)
-
-        return res
     }
+    override fun stopService(): JibriManagerState = this
 
     override fun healthCheck(): JibriHealth {
         return JibriHealth(false)

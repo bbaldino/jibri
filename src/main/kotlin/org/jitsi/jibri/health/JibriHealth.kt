@@ -31,10 +31,10 @@ data class JibriHealth(
     /**
      * Whether or not this Jibri is "busy". See [JibriManager#busy]
      */
-    private val busy: Boolean,
+    val busy: Boolean,
     /**
      * Context for the environment Jibri is currently active on
      * (only present if [busy] is true)
      */
-    private val environmentContext: EnvironmentContext? = null
+    val environmentContext: EnvironmentContext? = null
 )

@@ -92,7 +92,8 @@ class HttpApi(private val jibriManager: NewJibriManager) {
                 jibriManager.startFileRecording(
                     ServiceParams(usageTimeoutMinutes = 0),
                     FileRecordingRequestParams(startServiceParams.callParams, callLoginParams),
-                    environmentContext = null
+                    environmentContext = null,
+                    serviceStatusHandlers = listOf()
                 )
             }
             RecordingSinkType.STREAM -> run {
@@ -102,7 +103,8 @@ class HttpApi(private val jibriManager: NewJibriManager) {
                 jibriManager.startStreaming(
                     ServiceParams(usageTimeoutMinutes = 0),
                     StreamingParams(startServiceParams.callParams, callLoginParams, youTubeStreamKey),
-                    environmentContext = null
+                    environmentContext = null,
+                    serviceStatusHandlers = listOf()
                 )
             }
             RecordingSinkType.GATEWAY -> run {
@@ -112,8 +114,10 @@ class HttpApi(private val jibriManager: NewJibriManager) {
                     ServiceParams(usageTimeoutMinutes = 0),
                     SipGatewayServiceParams(
                         startServiceParams.callParams,
-                        sipClientParams)
-                    )
+                        sipClientParams),
+                    environmentContext = null,
+                    serviceStatusHandlers = listOf()
+                )
             }
         }
         return when (result) {
