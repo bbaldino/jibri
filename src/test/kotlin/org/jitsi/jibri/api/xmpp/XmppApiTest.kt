@@ -25,11 +25,11 @@ import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.whenever
 import io.kotlintest.specs.ShouldSpec
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriIq
-import org.jitsi.jibri.JibriManager
 import org.jitsi.jibri.StartServiceResult
 import org.jitsi.jibri.config.XmppCredentials
 import org.jitsi.jibri.config.XmppEnvironmentConfig
 import org.jitsi.jibri.config.XmppMuc
+import org.jitsi.jibri.manager.NewJibriManager
 import org.jitsi.xmpp.mucclient.MucClient
 import org.jivesoftware.smack.iqrequest.AbstractIqRequestHandler
 import org.jivesoftware.smack.packet.Stanza
@@ -37,7 +37,7 @@ import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration
 
 class XmppApiTest : ShouldSpec() {
     init {
-        val jibriManager: JibriManager = mock()
+        val jibriManager: NewJibriManager = mock()
         val xmppConfig = XmppEnvironmentConfig(
             name = "xmppEnvName",
             xmppServerHosts = listOf("xmppServeHost"),

@@ -25,6 +25,7 @@ import org.jitsi.jibri.JibriManager
 import org.jitsi.jibri.StartServiceResult
 import org.jitsi.jibri.config.XmppEnvironmentConfig
 import org.jitsi.jibri.health.EnvironmentContext
+import org.jitsi.jibri.manager.NewJibriManager
 import org.jitsi.jibri.selenium.CallParams
 import org.jitsi.jibri.service.JibriServiceStatus
 import org.jitsi.jibri.service.JibriServiceStatusHandler
@@ -58,7 +59,7 @@ import java.util.logging.Logger
  * [JibriManager] API calls and translates the results into XMPP IQ responses.
  */
 class XmppApi(
-    private val jibriManager: JibriManager,
+    private val jibriManager: NewJibriManager,
     private val xmppConfigs: List<XmppEnvironmentConfig>
 ) {
     private val logger = Logger.getLogger(this::class.qualifiedName)

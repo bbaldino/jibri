@@ -42,7 +42,7 @@ open class StatusPublisher<T> {
      * a new status to publish.  Note that handlers are notified synchronously
      * in the context of the thread which calls [publishStatus]
      */
-    protected fun publishStatus(status: T) {
+    protected open fun publishStatus(status: T) {
         handlers.forEach { handler ->
             handler(status)
         }
