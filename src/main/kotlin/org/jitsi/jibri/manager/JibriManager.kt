@@ -9,6 +9,7 @@ import org.jitsi.jibri.manager.state.AlreadyBusyException
 import org.jitsi.jibri.manager.state.Busy
 import org.jitsi.jibri.manager.state.Idle
 import org.jitsi.jibri.manager.state.JibriManagerState
+import org.jitsi.jibri.manager.state.StateFactory
 import org.jitsi.jibri.selenium.CallParams
 import org.jitsi.jibri.service.JibriService
 import org.jitsi.jibri.service.JibriServiceStatus
@@ -46,17 +47,18 @@ data class FileRecordingRequestParams(
     val callLoginParams: XmppCredentials
 )
 
-class JibriManager(val config: JibriConfig) : StatusPublisher<JibriStatusPacketExt.Status>() {
+class JibriManager(
+    val config: JibriConfig,
+    val stateFactory: StateFactory = StateFactory()
+) : StatusPublisher<JibriStatusPacketExt.Status>() {
     private val logger = Logger.getLogger(this::class.qualifiedName)
     /**
      * The current state of this [JibriManager].  The state object implements
      * the proper behavior for each interface call for that state.
      */
-    private var state: JibriManagerState = Idle(this)
+    private var state: JibriManagerState = stateFactory.createIdleState(this)
 
-    public override fun publishStatus(status: JibriStatusPacketExt.Status) {
-        super.publishStatus(status)
-    }
+    public override fun publishStatus(status: JibriStatusPacketExt.Status) = super.publishStatus(status)
 
     private fun transitionToState(newState: JibriManagerState) {
         state = newState

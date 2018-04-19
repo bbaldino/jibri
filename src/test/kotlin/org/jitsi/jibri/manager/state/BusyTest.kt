@@ -18,13 +18,16 @@
 package org.jitsi.jibri.manager.state
 
 import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.anyOrNull
 import com.nhaarman.mockito_kotlin.argumentCaptor
 import com.nhaarman.mockito_kotlin.eq
 import com.nhaarman.mockito_kotlin.mock
 import com.nhaarman.mockito_kotlin.never
+import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.whenever
 import io.kotlintest.Description
+import io.kotlintest.TestResult
 import io.kotlintest.matchers.haveSize
 import io.kotlintest.matchers.instanceOf
 import io.kotlintest.should
@@ -42,6 +45,8 @@ import java.util.concurrent.TimeUnit
 
 internal class BusyTest : FunSpec() {
     private val jibriManager: JibriManager = mock()
+    private val stateFactory: StateFactory = mock()
+    private val idleState: Idle = mock()
 
     override fun beforeTest(description: Description) {
         super.beforeTest(description)
@@ -49,6 +54,11 @@ internal class BusyTest : FunSpec() {
         whenever(jibriConfig.recordingDirectory).thenReturn(mock())
         whenever(jibriConfig.finalizeRecordingScriptPath).thenReturn("finalize_dir")
         whenever(jibriManager.config).thenReturn(jibriConfig)
+        whenever(jibriManager.stateFactory).thenReturn(stateFactory)
+    }
+
+    override fun afterTest(description: Description, result: TestResult) {
+        reset(jibriManager, stateFactory, idleState)
     }
 
     init {
@@ -145,6 +155,7 @@ internal class BusyTest : FunSpec() {
         test("stopService should call stop on the active service") {
             val service: JibriService = mock()
             whenever(service.start()).thenReturn(true)
+            whenever(stateFactory.createIdleState(any(), anyOrNull(), anyOrNull())).thenReturn(idleState)
             val busy = Busy(jibriManager, service, 0, serviceStatusHandlers = listOf())
             busy.stopService()
             verify(service).stop()
@@ -153,6 +164,7 @@ internal class BusyTest : FunSpec() {
         test("stopService should return idle state") {
             val service: JibriService = mock()
             whenever(service.start()).thenReturn(true)
+            whenever(stateFactory.createIdleState(any(), anyOrNull(), anyOrNull())).thenReturn(idleState)
             val busy = Busy(jibriManager, service, 0, serviceStatusHandlers = listOf())
             val newState = busy.stopService()
             newState shouldBe instanceOf(Idle::class)
@@ -162,12 +174,13 @@ internal class BusyTest : FunSpec() {
             val service: JibriService = mock()
             whenever(service.start()).thenReturn(true)
             val busy = Busy(jibriManager, service, 0, serviceStatusHandlers = listOf())
-            var idleFuncInvoked = false
-            val func = { idleFuncInvoked = true }
+            val func = { }
             busy.executeWhenIdle(func)
-            val idleState = busy.stopService()
-            idleState.postStateTransition()
-            idleFuncInvoked shouldBe true
+            val executeWhenIdleFunc = argumentCaptor<() -> Unit>()
+            whenever(stateFactory.createIdleState(any(), executeWhenIdleFunc.capture(), anyOrNull())).thenReturn(mock())
+            busy.stopService()
+            executeWhenIdleFunc.allValues should haveSize(1)
+            executeWhenIdleFunc.firstValue shouldBe func
         }
     }
 }

@@ -144,10 +144,10 @@ class Busy(
     ): JibriManagerState = throw AlreadyBusyException()
 
     override fun stopService(): JibriManagerState {
-        println("Stopping the current service")
+        logger.info("Stopping the current service")
         serviceTimeoutTask?.cancel(false)
         activeService.stop()
-        return Idle(jibriManager, pendingIdleFunc)
+        return jibriManager.stateFactory.createIdleState(jibriManager, pendingIdleFunc)
     }
 
     override fun healthCheck(): JibriHealth {
@@ -228,7 +228,13 @@ class Idle(
         serviceStatusHandlers: List<JibriServiceStatusHandler>
     ): JibriManagerState {
         return try {
-            Busy(jibriManager, jibriService, serviceParams.usageTimeoutMinutes, environmentContext, serviceStatusHandlers)
+            jibriManager.stateFactory.createBusyState(
+                jibriManager,
+                jibriService,
+                serviceParams.usageTimeoutMinutes,
+                environmentContext,
+                serviceStatusHandlers
+            )
         } catch (e: StateTransitionException) {
             this
         }

@@ -18,11 +18,14 @@
 package org.jitsi.jibri.manager.state
 
 import com.nhaarman.mockito_kotlin.any
+import com.nhaarman.mockito_kotlin.anyOrNull
 import com.nhaarman.mockito_kotlin.argumentCaptor
 import com.nhaarman.mockito_kotlin.mock
+import com.nhaarman.mockito_kotlin.reset
 import com.nhaarman.mockito_kotlin.verify
 import com.nhaarman.mockito_kotlin.whenever
 import io.kotlintest.Description
+import io.kotlintest.TestResult
 import io.kotlintest.matchers.beTheSameInstanceAs
 import io.kotlintest.matchers.haveSize
 import io.kotlintest.matchers.instanceOf
@@ -31,20 +34,22 @@ import io.kotlintest.shouldBe
 import io.kotlintest.specs.FunSpec
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriStatusPacketExt
 import org.jitsi.jibri.CallUrlInfo
-import org.jitsi.jibri.FileRecordingRequestParams
 import org.jitsi.jibri.config.JibriConfig
 import org.jitsi.jibri.config.XmppCredentials
 import org.jitsi.jibri.health.EnvironmentContext
+import org.jitsi.jibri.manager.FileRecordingRequestParams
 import org.jitsi.jibri.manager.JibriManager
 import org.jitsi.jibri.selenium.CallParams
-import org.jitsi.jibri.service.impl.FileRecordingJibriService
 import org.jitsi.jibri.service.JibriServiceFactory
 import org.jitsi.jibri.service.ServiceParams
+import org.jitsi.jibri.service.impl.FileRecordingJibriService
 
 internal class IdleTest : FunSpec() {
     private val jibriManager: JibriManager = mock()
     private lateinit var idleState: JibriManagerState
     private val serviceFactory: JibriServiceFactory = mock()
+    private val stateFactory: StateFactory = mock()
+    private val busyState: Busy = mock()
 
     override fun beforeTest(description: Description) {
         super.beforeTest(description)
@@ -52,8 +57,14 @@ internal class IdleTest : FunSpec() {
         whenever(jibriConfig.recordingDirectory).thenReturn(mock())
         whenever(jibriConfig.finalizeRecordingScriptPath).thenReturn("finalize_dir")
         whenever(jibriManager.config).thenReturn(jibriConfig)
+        whenever(jibriManager.stateFactory).thenReturn(stateFactory)
 
         idleState = Idle(jibriManager, serviceFactory = serviceFactory)
+    }
+
+    override fun afterTest(description: Description, result: TestResult) {
+        super.afterTest(description, result)
+        reset(jibriManager, serviceFactory, stateFactory, busyState)
     }
 
     init {
@@ -96,6 +107,8 @@ internal class IdleTest : FunSpec() {
             val fileRecordingService: FileRecordingJibriService = mock()
             whenever(fileRecordingService.start()).thenReturn(true)
             whenever(serviceFactory.createFileRecordingService(any())).thenReturn(fileRecordingService)
+            whenever(stateFactory.createBusyState(anyOrNull(), anyOrNull(), any(), anyOrNull(), anyOrNull(), anyOrNull()))
+                .thenReturn(busyState)
 
             val serviceParams = ServiceParams(0)
             val fileRecordingRequestParams = FileRecordingRequestParams(
@@ -109,11 +122,8 @@ internal class IdleTest : FunSpec() {
         }
 
         test("startFileRecording should return idle state (itself) if the service fails to start") {
-            val fileRecordingService: FileRecordingJibriService = mock()
-            whenever(fileRecordingService.start()).thenAnswer {
-                throw StartServiceErrorException()
-            }
-            whenever(serviceFactory.createFileRecordingService(any())).thenReturn(fileRecordingService)
+            whenever(stateFactory.createBusyState(anyOrNull(), anyOrNull(), any(), anyOrNull(), anyOrNull(), anyOrNull()))
+                .thenThrow(StartServiceErrorException())
 
             val serviceParams = ServiceParams(0)
             val fileRecordingRequestParams = FileRecordingRequestParams(
