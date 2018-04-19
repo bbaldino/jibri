@@ -34,14 +34,14 @@ import io.kotlintest.specs.FunSpec
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriStatusPacketExt
 import org.jitsi.jibri.config.JibriConfig
 import org.jitsi.jibri.health.EnvironmentContext
-import org.jitsi.jibri.manager.NewJibriManager
+import org.jitsi.jibri.manager.JibriManager
 import org.jitsi.jibri.service.JibriService
 import org.jitsi.jibri.service.JibriServiceStatusHandler
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
 internal class BusyTest : FunSpec() {
-    private val jibriManager: NewJibriManager = mock()
+    private val jibriManager: JibriManager = mock()
 
     override fun beforeTest(description: Description) {
         super.beforeTest(description)

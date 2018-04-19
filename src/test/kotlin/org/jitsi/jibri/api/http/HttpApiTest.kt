@@ -38,11 +38,11 @@ import org.glassfish.jersey.server.ResourceConfig
 import org.glassfish.jersey.test.JerseyTest
 import org.jitsi.jibri.CallUrlInfo
 import org.jitsi.jibri.RecordingSinkType
-import org.jitsi.jibri.StartServiceResult
 import org.jitsi.jibri.config.XmppCredentials
 import org.jitsi.jibri.health.EnvironmentContext
 import org.jitsi.jibri.health.JibriHealth
-import org.jitsi.jibri.manager.NewJibriManager
+import org.jitsi.jibri.manager.JibriManager
+import org.jitsi.jibri.manager.StartServiceResult
 import org.jitsi.jibri.selenium.CallParams
 import org.jitsi.jibri.service.ServiceParams
 import javax.ws.rs.client.Entity
@@ -57,7 +57,7 @@ fun containStr(str: String) = object : Matcher<String> {
 }
 
 class HttpApiTest : ShouldSpec() {
-    private val jibriManager: NewJibriManager = mock()
+    private val jibriManager: JibriManager = mock()
     private lateinit var jerseyTest: JerseyTest
 
     override fun beforeSpec(description: Description, spec: Spec) {

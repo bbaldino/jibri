@@ -17,12 +17,11 @@
 
 package org.jitsi.jibri.api.http
 
-import org.jitsi.jibri.FileRecordingRequestParams
-import org.jitsi.jibri.JibriManager
 import org.jitsi.jibri.RecordingSinkType
-import org.jitsi.jibri.StartServiceResult
 import org.jitsi.jibri.config.XmppCredentials
-import org.jitsi.jibri.manager.NewJibriManager
+import org.jitsi.jibri.manager.FileRecordingRequestParams
+import org.jitsi.jibri.manager.JibriManager
+import org.jitsi.jibri.manager.StartServiceResult
 import org.jitsi.jibri.selenium.CallParams
 import org.jitsi.jibri.service.ServiceParams
 import org.jitsi.jibri.service.impl.SipGatewayServiceParams
@@ -60,7 +59,7 @@ data class StartServiceParams(
  * [JibriManager], as well as retrieving the health and status of this Jibri
  */
 @Path("/jibri/api/v1.0")
-class HttpApi(private val jibriManager: NewJibriManager) {
+class HttpApi(private val jibriManager: JibriManager) {
     private val logger = Logger.getLogger(this::class.qualifiedName)
 
     /**

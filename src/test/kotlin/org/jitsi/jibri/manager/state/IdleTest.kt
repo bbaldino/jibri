@@ -35,14 +35,14 @@ import org.jitsi.jibri.FileRecordingRequestParams
 import org.jitsi.jibri.config.JibriConfig
 import org.jitsi.jibri.config.XmppCredentials
 import org.jitsi.jibri.health.EnvironmentContext
-import org.jitsi.jibri.manager.NewJibriManager
+import org.jitsi.jibri.manager.JibriManager
 import org.jitsi.jibri.selenium.CallParams
 import org.jitsi.jibri.service.impl.FileRecordingJibriService
 import org.jitsi.jibri.service.JibriServiceFactory
 import org.jitsi.jibri.service.ServiceParams
 
 internal class IdleTest : FunSpec() {
-    private val jibriManager: NewJibriManager = mock()
+    private val jibriManager: JibriManager = mock()
     private lateinit var idleState: JibriManagerState
     private val serviceFactory: JibriServiceFactory = mock()
 

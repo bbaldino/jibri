@@ -17,10 +17,10 @@
 package org.jitsi.jibri.manager.state
 
 import net.java.sip.communicator.impl.protocol.jabber.extensions.jibri.JibriStatusPacketExt
-import org.jitsi.jibri.FileRecordingRequestParams
 import org.jitsi.jibri.health.EnvironmentContext
 import org.jitsi.jibri.health.JibriHealth
-import org.jitsi.jibri.manager.NewJibriManager
+import org.jitsi.jibri.manager.FileRecordingRequestParams
+import org.jitsi.jibri.manager.JibriManager
 import org.jitsi.jibri.service.JibriService
 import org.jitsi.jibri.service.JibriServiceFactory
 import org.jitsi.jibri.service.JibriServiceStatusHandler
@@ -41,11 +41,11 @@ class StartServiceErrorException : StateTransitionException("Error starting serv
 class AlreadyBusyException : StateTransitionException("Jibri is already busy")
 
 /**
- * [NewJibriManager] has 2 states: [Busy] and [Idle].  Each state
+ * [JibriManager] has 2 states: [Busy] and [Idle].  Each state
  * has different implementations of the methods defined here in
  * [JibriManagerState].
  */
-sealed class JibriManagerState(protected val jibriManager: NewJibriManager) {
+sealed class JibriManagerState(protected val jibriManager: JibriManager) {
     open fun postStateTransition() {}
 
     open fun startFileRecording(
@@ -77,7 +77,7 @@ sealed class JibriManagerState(protected val jibriManager: NewJibriManager) {
 }
 
 class Busy(
-    jibriManager: NewJibriManager,
+    jibriManager: JibriManager,
     private val activeService: JibriService,
     usageTimeoutMinutes: Int,
     private val environmentContext: EnvironmentContext? = null,
@@ -160,7 +160,7 @@ class Busy(
 }
 
 class Idle(
-    jibriManager: NewJibriManager,
+    jibriManager: JibriManager,
     private val idleFunc: () -> Unit = {},
     private val serviceFactory: JibriServiceFactory = JibriServiceFactory()
 ) : JibriManagerState(jibriManager) {

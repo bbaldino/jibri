@@ -36,7 +36,7 @@ import org.jitsi.jibri.api.http.HttpApi
 import org.jitsi.jibri.api.http.internal.InternalHttpApi
 import org.jitsi.jibri.api.xmpp.XmppApi
 import org.jitsi.jibri.config.JibriConfig
-import org.jitsi.jibri.manager.NewJibriManager
+import org.jitsi.jibri.manager.JibriManager
 import org.jitsi.jibri.util.extensions.error
 import java.io.File
 import java.util.logging.Logger
@@ -84,7 +84,7 @@ fun main(args: Array<String>) {
     }
     val jibriConfig = loadConfig(jibriConfigFile) ?: exitProcess(1)
 //    val jibri = JibriManager(jibriConfig)
-    val jibri = NewJibriManager(jibriConfig)
+    val jibri = JibriManager(jibriConfig)
 
     // InternalHttpApi
     val configChangedHandler = {
