@@ -61,8 +61,12 @@ class JibriManager(
     public override fun publishStatus(status: JibriStatusPacketExt.Status) = super.publishStatus(status)
 
     private fun transitionToState(newState: JibriManagerState) {
-        state = newState
-        state.postStateTransition()
+        // If we remained in the exact same state, don't invoke
+        // postStateTransition again
+        if (state !== newState) {
+            state = newState
+            state.postStateTransition()
+        }
     }
 
     private fun handleServiceStopped(status: JibriServiceStatus) {
@@ -71,6 +75,19 @@ class JibriManager(
             JibriServiceStatus.ERROR -> logger.error("Service finished with error, shutting down")
         }
         stopService()
+    }
+
+    private fun startService(startService: JibriManagerState.() -> JibriManagerState): StartServiceResult {
+        return try {
+            val newState = state.startService()
+            transitionToState(newState)
+            when (newState) {
+                is Idle -> StartServiceResult.ERROR
+                is Busy -> StartServiceResult.SUCCESS
+            }
+        } catch (e: AlreadyBusyException) {
+            StartServiceResult.BUSY
+        }
     }
 
     /**
@@ -84,24 +101,15 @@ class JibriManager(
         fileRecordingRequestParams: FileRecordingRequestParams,
         environmentContext: EnvironmentContext? = null,
         serviceStatusHandlers: List<JibriServiceStatusHandler>
-    ): StartServiceResult {
-        return try {
-            val newState =
-                state.startFileRecording(
-                    serviceParams,
-                    fileRecordingRequestParams,
-                    environmentContext,
-                    serviceStatusHandlers + ::handleServiceStopped
-                )
-            transitionToState(newState)
-            when (newState) {
-                is Idle -> StartServiceResult.ERROR
-                is Busy -> StartServiceResult.SUCCESS
-            }
-        } catch (e: AlreadyBusyException) {
-            StartServiceResult.BUSY
+    ): StartServiceResult =
+        startService {
+            startFileRecording(
+                serviceParams,
+                fileRecordingRequestParams,
+                environmentContext,
+                serviceStatusHandlers + ::handleServiceStopped
+            )
         }
-    }
 
     /**
      * Starts a [StreamingJibriService] to capture the call according
@@ -114,23 +122,13 @@ class JibriManager(
         streamingParams: StreamingParams,
         environmentContext: EnvironmentContext? = null,
         serviceStatusHandlers: List<JibriServiceStatusHandler>
-    ): StartServiceResult {
-        return try {
-            val newState =
-                state.startStreaming(
-                    serviceParams,
-                    streamingParams,
-                    environmentContext,
-                    serviceStatusHandlers + ::handleServiceStopped
-                )
-            transitionToState(newState)
-            when (newState) {
-                is Idle -> StartServiceResult.ERROR
-                is Busy -> StartServiceResult.SUCCESS
-            }
-        } catch (e: AlreadyBusyException) {
-            StartServiceResult.BUSY
-        }
+    ): StartServiceResult = startService {
+        startStreaming(
+            serviceParams,
+            streamingParams,
+            environmentContext,
+            serviceStatusHandlers + ::handleServiceStopped
+        )
     }
 
     fun startSipGateway(
@@ -138,23 +136,13 @@ class JibriManager(
         sipGatewayServiceParams: SipGatewayServiceParams,
         environmentContext: EnvironmentContext? = null,
         serviceStatusHandlers: List<JibriServiceStatusHandler>
-    ): StartServiceResult {
-        return try {
-            val newState =
-                state.startSipGateway(
-                    serviceParams,
-                    sipGatewayServiceParams,
-                    environmentContext,
-                    serviceStatusHandlers + ::handleServiceStopped
-                )
-            transitionToState(newState)
-            when (newState) {
-                is Idle -> StartServiceResult.ERROR
-                is Busy -> StartServiceResult.SUCCESS
-            }
-        } catch (e: AlreadyBusyException) {
-            StartServiceResult.BUSY
-        }
+    ): StartServiceResult = startService {
+        startSipGateway(
+            serviceParams,
+            sipGatewayServiceParams,
+            environmentContext,
+            serviceStatusHandlers + ::handleServiceStopped
+        )
     }
 
     /**

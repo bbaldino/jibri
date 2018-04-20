@@ -48,6 +48,7 @@ class AlreadyBusyException : StateTransitionException("Jibri is already busy")
 sealed class JibriManagerState(protected val jibriManager: JibriManager) {
     open fun postStateTransition() {}
 
+    @Throws(AlreadyBusyException::class)
     open fun startFileRecording(
         serviceParams: ServiceParams,
         fileRecordingRequestParams: FileRecordingRequestParams,
@@ -55,6 +56,7 @@ sealed class JibriManagerState(protected val jibriManager: JibriManager) {
         serviceStatusHandlers: List<JibriServiceStatusHandler>
     ): JibriManagerState = throw NotImplementedError()
 
+    @Throws(AlreadyBusyException::class)
     open fun startStreaming(
         serviceParams: ServiceParams,
         streamingParams: StreamingParams,
@@ -62,6 +64,7 @@ sealed class JibriManagerState(protected val jibriManager: JibriManager) {
         serviceStatusHandlers: List<JibriServiceStatusHandler>
     ): JibriManagerState = throw NotImplementedError()
 
+    @Throws(AlreadyBusyException::class)
     open fun startSipGateway(
         serviceParams: ServiceParams,
         sipGatewayServiceParams: SipGatewayServiceParams,
@@ -123,6 +126,7 @@ class Busy(
         jibriManager.publishStatus(JibriStatusPacketExt.Status.BUSY)
     }
 
+    @Throws(AlreadyBusyException::class)
     override fun startFileRecording(
         serviceParams: ServiceParams,
         fileRecordingRequestParams: FileRecordingRequestParams,
@@ -130,6 +134,7 @@ class Busy(
         serviceStatusHandlers: List<JibriServiceStatusHandler>
     ): JibriManagerState = throw AlreadyBusyException()
 
+    @Throws(AlreadyBusyException::class)
     override fun startStreaming(
         serviceParams: ServiceParams,
         streamingParams: StreamingParams,
@@ -137,6 +142,7 @@ class Busy(
         serviceStatusHandlers: List<JibriServiceStatusHandler>
     ): JibriManagerState = throw AlreadyBusyException()
 
+    @Throws(AlreadyBusyException::class)
     override fun startSipGateway(
         serviceParams: ServiceParams,
         sipGatewayServiceParams: SipGatewayServiceParams,
