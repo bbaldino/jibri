@@ -79,6 +79,7 @@ internal class BusyTest : FunSpec() {
             shouldThrow<StartServiceErrorException> {
                 Busy(jibriManager, service, 0, serviceStatusHandlers = listOf())
             }
+            verify(service).stop()
         }
 
         test("should not schedule the usage timeout if none is given") {

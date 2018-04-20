@@ -113,6 +113,7 @@ class Busy(
         serviceStatusHandlers.forEach(activeService::addStatusHandler)
         if (!activeService.start()) {
             logger.error("Service failed to start")
+            stopService()
             throw StartServiceErrorException()
         }
     }
